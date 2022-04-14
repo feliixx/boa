@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -46,91 +47,143 @@ func SetDefault(key string, value any) {
 
 // GetString returns the value associated with the key as a string.
 func GetString(key string) string {
-	return cast[string](getValue(key))
+
+	val, ok := getValue(key)
+	if !ok {
+		return ""
+	}
+	return cast[string](val)
 }
 
 // GetBool returns the value associated with the key as a bool.
 func GetBool(key string) bool {
-	return cast[bool](getValue(key))
+
+	val, ok := getValue(key)
+	if !ok {
+		return false
+	}
+	return cast[bool](val)
 }
 
 // GetInt returns the value associated with the key as an int.
 func GetInt(key string) int {
 
-	n := cast[json.Number](getValue(key))
-	v, err := strconv.ParseInt(string(n), 10, 64)
+	val, ok := getValue(key)
+	if !ok {
+		return 0
+	}
+
+	n := cast[json.Number](val)
+	i, err := strconv.ParseInt(string(n), 10, 64)
 	if err != nil {
 		panic("Can't parse number '%s' as an int")
 	}
-	return int(v)
+	return int(i)
 }
 
 // GetInt32 returns the value associated with the key as an int32
 func GetInt32(key string) int32 {
-	n := cast[json.Number](getValue(key))
-	v, err := strconv.ParseInt(string(n), 10, 32)
+
+	val, ok := getValue(key)
+	if !ok {
+		return 0
+	}
+
+	n := cast[json.Number](val)
+	i, err := strconv.ParseInt(string(n), 10, 32)
 	if err != nil {
 		panic("Can't parse number '%s' as an int32")
 	}
-	return int32(v)
+	return int32(i)
 }
 
 // GetInt64 returns the value associated with the key as an int64.
 func GetInt64(key string) int64 {
-	n := cast[json.Number](getValue(key))
-	v, err := strconv.ParseInt(string(n), 10, 64)
+
+	val, ok := getValue(key)
+	if !ok {
+		return 0
+	}
+
+	n := cast[json.Number](val)
+	i, err := strconv.ParseInt(string(n), 10, 64)
 	if err != nil {
 		panic("Can't parse number '%s' as an int64")
 	}
-	return v
+	return i
 }
 
 // GetUint returns the value associated with the key as an uint.
 func GetUint(key string) uint {
-	n := cast[json.Number](getValue(key))
-	v, err := strconv.ParseUint(string(n), 10, 64)
+
+	val, ok := getValue(key)
+	if !ok {
+		return 0
+	}
+
+	n := cast[json.Number](val)
+	i, err := strconv.ParseUint(string(n), 10, 64)
 	if err != nil {
 		panic("Can't parse number '%s' as an uint")
 	}
-	return uint(v)
+	return uint(i)
 }
 
 // GetUint32 returns the value associated with the key as an uint32.
 func GetUint32(key string) uint32 {
-	n := cast[json.Number](getValue(key))
-	v, err := strconv.ParseUint(string(n), 10, 32)
+
+	val, ok := getValue(key)
+	if !ok {
+		return 0
+	}
+
+	n := cast[json.Number](val)
+	i, err := strconv.ParseUint(string(n), 10, 32)
 	if err != nil {
 		panic("Can't parse number '%s' as an uint32")
 	}
-	return uint32(v)
+	return uint32(i)
 }
 
 // GetUint64 returns the value associated with the key as an uint64.
 func GetUint64(key string) uint64 {
-	n := cast[json.Number](getValue(key))
-	v, err := strconv.ParseUint(string(n), 10, 64)
+
+	val, ok := getValue(key)
+	if !ok {
+		return 0
+	}
+
+	n := cast[json.Number](val)
+	i, err := strconv.ParseUint(string(n), 10, 64)
 	if err != nil {
 		panic("Can't parse number '%s' as an uint64")
 	}
-	return uint64(v)
+	return uint64(i)
 }
 
 // GetFloat64 returns the value associated with the key as a float64.
 func GetFloat64(key string) float64 {
-	n := cast[json.Number](getValue(key))
-	v, err := strconv.ParseFloat(string(n), 64)
+
+	val, ok := getValue(key)
+	if !ok {
+		return 0.0
+	}
+
+	n := cast[json.Number](val)
+	f, err := strconv.ParseFloat(string(n), 64)
 	if err != nil {
 		panic("Can't parse number '%s' as a float64")
 	}
-	return v
+	return f
 }
 
 // GetAny returns any value associated with the key.
 func GetAny(key string) any {
-	return getValue(key)
+	v, _ := getValue(key)
+	return v
 }
 
-func getValue(key string) any {
+func getValue(key string) (val any, ok bool) {
 
 	nProp := strings.Split(key, ".")
 	nested := config
@@ -140,39 +193,26 @@ func getValue(key string) any {
 		if i == len(nProp)-1 {
 
 			if v, ok := nested[prop]; ok {
-				return v
+				return v, ok
 			}
-
-			path := "'" + strings.Join(nProp[:i], ".") + "'"
-			if path == "''" {
-				path = "root object"
-			}
-
-			return getDefaultValueOrPanic(
-				key,
-				fmt.Sprintf("%s has no key '%s'", path, prop),
-			)
+			return getDefault(key)
 		}
 
 		if _, ok := nested[prop].(map[string]any); !ok {
-			return getDefaultValueOrPanic(
-				key,
-				fmt.Sprintf("%s is not an object", strings.Join(nProp[:i+1], ".")),
-			)
+			return getDefault(key)
 		}
 
 		nested = nested[prop].(map[string]any)
 	}
-
-	return nil
+	return nil, false
 }
 
-func getDefaultValueOrPanic(key, panicMsg string) any {
+func getDefault(key string) (val any, ok bool) {
 	v, ok := defaults[key]
 	if !ok {
-		panic(panicMsg)
+		log.Printf("no value found for key '%s', using nil value instead", key)
 	}
-	return v
+	return v, ok
 }
 
 func cast[T any](v any) T {

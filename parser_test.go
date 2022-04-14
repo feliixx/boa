@@ -27,8 +27,7 @@ func TestGetString(t *testing.T) {
 			name:     "non existing key",
 			config:   `{ "key": "value" }`,
 			property: "yellow",
-			panic:    true,
-			panicMsg: `root object has no key 'yellow'`,
+			expected: "",
 		},
 		{
 			name:     "one nested level",
@@ -40,15 +39,13 @@ func TestGetString(t *testing.T) {
 			name:     "non existing nested",
 			config:   `{"root": {"first": {"key":"value"}}}`,
 			property: "root.wrong.key",
-			panic:    true,
-			panicMsg: `root.wrong is not an object`,
+			expected: "",
 		},
 		{
 			name:     "non existing nested key",
 			config:   `{"root": {"first": {"key":"value"}}}`,
 			property: "root.first.yellow",
-			panic:    true,
-			panicMsg: `'root.first' has no key 'yellow'`,
+			expected: "",
 		},
 		{
 			name:     "wrong type",
@@ -160,6 +157,47 @@ func TestAll(t *testing.T) {
 			name: "float64",
 			want: 1.23842323,
 			got:  boa.GetFloat64("root.float64"),
+		},
+
+		{
+			name: "bool nil value",
+			want: false,
+			got:  boa.GetBool("nilvalue.bool"),
+		},
+		{
+			name: "int nil value",
+			want: int(0),
+			got:  boa.GetInt("nilvalue.int"),
+		},
+		{
+			name: "int32 nil value",
+			want: int32(0),
+			got:  boa.GetInt32("nilvalue.int32"),
+		},
+		{
+			name: "int64 nil value",
+			want: int64(0),
+			got:  boa.GetInt64("nilvalue.int64"),
+		},
+		{
+			name: "uint nil value",
+			want: uint(0),
+			got:  boa.GetUint("nilvalue.uint"),
+		},
+		{
+			name: "uint32 nil value",
+			want: uint32(0),
+			got:  boa.GetUint32("nilvalue.uint32"),
+		},
+		{
+			name: "uint64 nil value",
+			want: uint64(0),
+			got:  boa.GetUint64("nilvalue.uint64"),
+		},
+		{
+			name: "float64 nil value",
+			want: 0.0,
+			got:  boa.GetFloat64("nilvalue.float64"),
 		},
 	}
 
