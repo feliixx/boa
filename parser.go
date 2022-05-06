@@ -1,6 +1,7 @@
 package boa
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,20 +16,77 @@ var (
 )
 
 // ParseConfig reads the config from an io.Reader.
-func ParseConfig(jsonConfig io.Reader) error {
+//
+// The config may be in JSON or in JSONC ( json with comment)
+// Allowed format for comments are 
+//  * single line ( //... )
+//  * multiligne ( /*...*/ )
+func ParseConfig(jsoncConfig io.Reader) error {
 
-	d := json.NewDecoder(jsonConfig)
+	jsonc, err := io.ReadAll(jsoncConfig)
+	if err != nil {
+		return fmt.Errorf("fail to read from reader: %v", err)
+	}
+
+	cleanJson := removeComment(jsonc)
+
+	d := json.NewDecoder(bytes.NewReader(cleanJson))
 	d.UseNumber()
 
 	var src map[string]any
-	err := d.Decode(&src)
+	err = d.Decode(&src)
 	if err != nil {
-		return err
+		return fmt.Errorf("fail to parse JSON: %v", err)
 	}
 
 	flatten("", src, config)
 
 	return nil
+}
+
+func removeComment(src []byte) []byte {
+
+	output := make([]byte, 0, len(src))
+
+	var prev byte
+	inString := false
+	inSingleLineComment := false
+	inMultiligneComment := false
+
+	for _, b := range src {
+
+		switch b {
+
+		case '"':
+			inString = !inString
+		case '/':
+			if !inString && prev == '/' {
+				output = output[0 : len(output)-1]
+				inSingleLineComment = true
+			}
+
+			if inMultiligneComment && prev == '*' {
+				inMultiligneComment = false
+				continue
+			}
+
+		case '*':
+			if !inString && prev == '/' {
+				output = output[0 : len(output)-1]
+				inMultiligneComment = true
+			}
+		case '\n':
+			inSingleLineComment = false
+		}
+
+		prev = b
+
+		if !inSingleLineComment && !inMultiligneComment {
+			output = append(output, b)
+		}
+	}
+
+	return output
 }
 
 func flatten(prefix string, src map[string]any, dst map[string]any) {

@@ -308,6 +308,65 @@ func TestSetDefaults(t *testing.T) {
 	}
 }
 
+func TestRemoveComment(t *testing.T) {
+
+	config := `
+	{
+		/* some 
+		multiline 
+		comment */
+		"smtp": {
+			// single line 
+			"enabled": true, // with trailing space
+			"host": "http://127.0.0.1",// without trailing space
+			"port": 55,
+			"pwd": "fhd/*|,;,bdo*/"
+		} 			/**/
+
+
+	}
+	// `
+
+	loadConfig(t, config)
+
+	tests := []struct {
+		name string
+		want any
+		got  any
+	}{
+		{
+			name: "smtp.enabled",
+			want: true,
+			got:  boa.GetBool("smtp.enabled"),
+		},
+		{
+			name: "smtp.host",
+			want: "http://127.0.0.1",
+			got:  boa.GetString("smtp.host"),
+		},
+		{
+			name: "smtp.port",
+			want: 55,
+			got:  boa.GetInt("smtp.port"),
+		},
+		{
+			name: "smtp.pwd",
+			want: "fhd/*|,;,bdo*/",
+			got:  boa.GetString("smtp.pwd"),
+		},
+	}
+
+	for _, test := range tests {
+
+		tt := test
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.want != tt.got {
+				t.Errorf("expected '%v' but got '%v'", tt.want, tt.got)
+			}
+		})
+	}
+}
+
 func loadConfig(t *testing.T, config string) {
 	err := boa.ParseConfig(strings.NewReader(config))
 	if err != nil {
