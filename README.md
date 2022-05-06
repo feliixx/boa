@@ -8,7 +8,7 @@ A small configuration library for go application with a viper-like API, but with
 
 It supports: 
 
-  * reading a config in JSON format 
+  * reading a config in JSON or JSONC ( JSON with comments) 
   * setting default 
 
 
