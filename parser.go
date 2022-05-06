@@ -7,11 +7,10 @@ import (
 	"log"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 var (
-	config   map[string]any
+	config   = map[string]any{}
 	defaults = map[string]any{}
 )
 
@@ -21,7 +20,32 @@ func ParseConfig(jsonConfig io.Reader) error {
 	d := json.NewDecoder(jsonConfig)
 	d.UseNumber()
 
-	return d.Decode(&config)
+	var src map[string]any
+	err := d.Decode(&src)
+	if err != nil {
+		return err
+	}
+
+	flatten("", src, config)
+
+	return nil
+}
+
+func flatten(prefix string, src map[string]any, dst map[string]any) {
+
+	if len(prefix) > 0 {
+		prefix += "."
+	}
+
+	for k, v := range src {
+
+		switch child := v.(type) {
+		case map[string]any:
+			flatten(prefix+k, child, dst)
+		default:
+			dst[prefix+k] = v
+		}
+	}
 }
 
 // SetDefault set the default value for this key.
@@ -184,27 +208,11 @@ func GetAny(key string) any {
 }
 
 func getValue(key string) (val any, ok bool) {
-
-	nProp := strings.Split(key, ".")
-	nested := config
-
-	for i, prop := range nProp {
-
-		if i == len(nProp)-1 {
-
-			if v, ok := nested[prop]; ok {
-				return v, ok
-			}
-			return getDefault(key)
-		}
-
-		if _, ok := nested[prop].(map[string]any); !ok {
-			return getDefault(key)
-		}
-
-		nested = nested[prop].(map[string]any)
+	v, ok := config[key]
+	if !ok {
+		v, ok = getDefault(key)
 	}
-	return nil, false
+	return v, ok
 }
 
 func getDefault(key string) (val any, ok bool) {
