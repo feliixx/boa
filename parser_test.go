@@ -1,6 +1,7 @@
 package boa_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -364,6 +365,55 @@ func TestRemoveComment(t *testing.T) {
 				t.Errorf("expected '%v' but got '%v'", tt.want, tt.got)
 			}
 		})
+	}
+}
+
+func TestGetMap(t *testing.T) {
+
+	config := `{
+		"root": {
+			"object": {
+				"key1": "val",
+				"key2": true,
+				"key3": 1
+			}
+		}
+	}`
+
+	loadConfig(t, config)
+
+	result := boa.GetMap("root.object")
+	if want, got := "val", result["key1"]; want != got {
+		t.Errorf("expected '%v' but got '%v'", want, got)
+	}
+	if want, got := true, result["key2"]; want != got {
+		t.Errorf("expected '%v' but got '%v'", want, got)
+	}
+	if want, got := json.Number("1"), result["key3"]; want != got {
+		t.Errorf("expected '%v' but got '%v'", want, got)
+	}
+
+	nonExistingMap := boa.GetMap("non_existing")
+	if nonExistingMap != nil {
+		t.Errorf("non existing key should return nil, but got '%v'", nonExistingMap)
+	}
+
+	defer func(t *testing.T) {
+		got := recover()
+		if got == nil {
+			t.Error("val not of type map should trigger a panic")
+		}
+		want := "'val' is not a map[string]interface {}"
+		if want != got {
+			t.Errorf("expected '%s' but got '%s'", want, got)
+		}
+	}(t)
+	_ = boa.GetMap("root.object.key1")
+
+	boa.SetDefault("non_existing", map[string]any{"k": "v"})
+	nonExistingMap = boa.GetMap("non_existing")
+	if len(nonExistingMap) != 1 {
+		t.Errorf("after default set, non_existing should be a map of length 1, but got '%v'", nonExistingMap)
 	}
 }
 
