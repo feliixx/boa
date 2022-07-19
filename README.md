@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/feliixx/boa)](https://goreportcard.com/report/github.com/feliixx/boa)
-[![codecov](https://codecov.io/gh/feliixx/boa/branch/master/graph/badge.svg)](https://codecov.io/gh/feliixx/boa)
+[![codecov](https://codecov.io/gh/feliixx/boa/branch/main/graph/badge.svg?token=NJ3F2CR3VA)](https://codecov.io/gh/feliixx/boa)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/feliixx/boa)](https://pkg.go.dev/github.com/feliixx/boa)
 
 ## boa
